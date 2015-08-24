@@ -72,6 +72,12 @@ timelocalPos=3
 # if $time_local is placed before $status, manually add 1 to statusPos according to log_format in nginx.conf 
 # 如果$time_local字段位于$status之前，根据log_format字段列的位置，手动加1，赋值到statusPos
 statusPos=6
+# nginx处理时间，用于筛选499请求（$request_time_msec或$request_time）
+nginxProcessTimePos="null"
+# 如果使用$request_time字段，将nginxProcessTimeMultiple设为1000
+nginxProcessTimeMultiple=1
+
+
 
 # time range(seconds) for log scan
 # 监控时长（单位为秒，一般为60秒）
@@ -205,11 +211,11 @@ function valueCheck(result, projectIdStr, earlyWarningStr, warningStr, earlyWarn
         warningInfo=\"\";
         if(result[i] >= earlyWarning[i]){
             state=2;
-            earlyWarningInfo=escape(strftime(\"%Y-%m-%d %H:%M:%S: \") \"${serverIp} \" earlyWarningMsg[i] \",当前值\" result[i] \",预警值\" earlyWarning[i]);
+            earlyWarningInfo=escape(earlyWarningMsg[i] \",当前值\" result[i] \",预警值\" earlyWarning[i] \" ${serverIp} \" strftime(\"%Y-%m-%d %H:%M:%S\"));
         }
         if(result[i] >= warning[i]){
             state=3;
-            warningInfo=escape(strftime(\"%Y-%m-%d %H:%M:%S: \") \"${serverIp} \" warningMsg[i] \",当前值\" result[i] \",报警值\" warning[i]);
+            warningInfo=escape(warningMsg[i] \",当前值\" result[i] \",报警值\" warning[i] \" ${serverIp} \" strftime(\"%Y-%m-%d %H:%M:%S\"));
         }
         curlCommand=\"curl -H 'Host: ${interfaceHost}' '${interfaceUrl}&projectId=\" projectId[i] \"&val=\" result[i] \"&state=\" state \"&advanceThresholdValue=\" earlyWarning[i] \"&reportThresholdValue=\" warning[i] \"&advanceThresholdStateInfo=\" earlyWarningInfo \"&reportThresholdStateInfo=\" warningInfo \"'\";
         print curlCommand;
@@ -244,7 +250,15 @@ function valueCheck(result, projectIdStr, earlyWarningStr, warningStr, earlyWarn
         # use request timestamp to tell whether it needs to be analysed
         if(${endTimestamp}+0 >= targetTimestamp+0 && ${startTimestamp}+0 <= targetTimestamp+0){
             # add up request_time
-            responseTimeData[\$((${requestPos})+1)]+=(\$(${requestTimePos}) * ${requestTimeMultiple});
+            if(\$(${requestTimePos})+0 > 0){
+                responseTimeData[\$((${requestPos})+1)]+=(\$(${requestTimePos}) / ${requestTimeMultiple});
+            }
+
+            if(\"${nginxProcessTimePos}\" == \"null\"){
+                nginxProcessTime = 101;
+            } else {
+                nginxProcessTime = (\$(${requestTimePos}) * ${requestTimeMultiple});
+            }
 
             # add up status
             tmpStatus=\$((${statusPos})+2)+0;
@@ -252,7 +266,11 @@ function valueCheck(result, projectIdStr, earlyWarningStr, warningStr, earlyWarn
                 statusNotFoundData[\$((${requestPos})+1)]++;
             }
             if(tmpStatus >= 499){
-                statusErrorData[\$((${requestPos})+1)]++;
+                if(tmpStatus == 499 && nginxProcessTime > 50){
+                    statusErrorData[\$((${requestPos})+1)]++;
+                } else {
+                    statusErrorData[\$((${requestPos})+1)]++;
+                }
             }
         }
     }
