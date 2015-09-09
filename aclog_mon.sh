@@ -266,8 +266,10 @@ function valueCheck(result, projectIdStr, earlyWarningStr, warningStr, earlyWarn
                 statusNotFoundData[\$((${requestPos})+1)]++;
             }
             if(tmpStatus >= 499){
-                if(tmpStatus == 499 && nginxProcessTime > 50){
-                    statusErrorData[\$((${requestPos})+1)]++;
+                if(tmpStatus == 499){
+                    if(nginxProcessTime > 50){
+                        statusErrorData[\$((${requestPos})+1)]++;
+                    }
                 } else {
                     statusErrorData[\$((${requestPos})+1)]++;
                 }
