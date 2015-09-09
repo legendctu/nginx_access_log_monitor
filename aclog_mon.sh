@@ -257,7 +257,7 @@ function valueCheck(result, projectIdStr, earlyWarningStr, warningStr, earlyWarn
             if(\"${nginxProcessTimePos}\" == \"null\"){
                 nginxProcessTime = 101;
             } else {
-                nginxProcessTime = (\$(${requestTimePos}) * ${requestTimeMultiple});
+                nginxProcessTime = (\$(${nginxProcessTimePos}) * ${nginxProcessTimeMultiple});
             }
 
             # add up status
