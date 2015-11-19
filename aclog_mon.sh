@@ -261,7 +261,12 @@ function valueCheck(result, projectIdStr, earlyWarningStr, warningStr, earlyWarn
             }
 
             # add up status
-            tmpStatus=\$((${statusPos})+2)+0;
+            tmpStatus=0;
+            if(${statusPos} > ${requestPos}){
+                tmpStatus=\$((${statusPos})+2)+0;
+            } else {
+                tmpStatus=\$(${statusPos})+0;
+            }
             if(tmpStatus == 404){
                 statusNotFoundData[\$((${requestPos})+1)]++;
             }
